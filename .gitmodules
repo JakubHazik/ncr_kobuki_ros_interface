@@ -1,0 +1,3 @@
+[submodule "rmrSimulator"]
+	path = rmrSimulator
+	url = https://github.com/wizardofsource/rmrSimulator.git
