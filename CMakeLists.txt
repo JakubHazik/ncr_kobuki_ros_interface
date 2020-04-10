@@ -10,6 +10,9 @@ project(ncr_kobuki_ros_interface)
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
+        sensor_msgs
+        tf
+        rviz_visual_tools
 )
 
 ## System dependencies are found with CMake's conventions
@@ -137,6 +140,8 @@ include_directories(
          src/lidar_interface.cpp
          src/robot_interface.cpp
          src/lidar.cpp
+         src/NcrKobukiRosInterface.cpp
+         src/file_lidar_sim.cpp
          )
 
 ## Rename C++ executable without prefix

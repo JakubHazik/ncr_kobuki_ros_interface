@@ -49,7 +49,7 @@ private:
     std::atomic_bool laserDataThreadRun = {true};
     LaserMeasurement laserData;
 
-    Lidar lidar;
+//    Lidar lidar;
 
     /// UDP settings
     struct sockaddr_in socket_me, socket_other, socket_send;

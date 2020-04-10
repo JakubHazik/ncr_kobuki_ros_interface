@@ -98,6 +98,7 @@ typedef struct {
 } LaserData;
 
 typedef struct {
+    int timestamp;
     int numberOfScans;
     LaserData Data[1000];
 } LaserMeasurement;

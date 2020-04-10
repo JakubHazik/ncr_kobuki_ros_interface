@@ -56,6 +56,9 @@
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
 
+  <depend>sensor_msgs</depend>
+  <depend>rviz_visual_tools</depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

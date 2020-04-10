@@ -4,6 +4,10 @@
 
 #include <ncr_kobuki_ros_interface/lidar_interface.h>
 #include <ros/ros.h>
+#include <ncr_kobuki_ros_interface/file_lidar_sim.h>
+#include <rviz_visual_tools/rviz_visual_tools.h>
+
+namespace rvt = rviz_visual_tools;
 
 LidarInterface::LidarInterface(const std::string& ipAddress) {
     this->ipAddress = ipAddress;
@@ -47,8 +51,27 @@ void LidarInterface::t_readLaserData() {
         syslog(LOG_ERR, "[LidarInterface]: Send empty command failed");
     }
 
+    // for file scan data debug
+//    rplidar lidar;
+//    lidar.connectToFile("/home/jakub/amr_ws/src/ncr_kobuki_ros_interface/data/lidardata.txt");
+//    rvt::RvizVisualToolsPtr visual_tools;
+//    visual_tools.reset(new rvt::RvizVisualTools("base_scan", "/scan_marker"));
+//    visual_tools->loadMarkerPub(false, true);  // create publisher before waiting
+//    visual_tools->deleteAllMarkers();
+//    visual_tools->enableBatchPublishing();
+
     while (laserDataThreadRun) {
-        ROS_INFO("lidar data received");
+        // for file scan data debug
+//        laserData = lidar.getMeasurementFromFile();
+//        visual_tools->deleteAllMarkers();
+//        for (int i = 0; i < laserData.numberOfScans; i++) {
+//            geometry_msgs::Point point;
+//            point.x = laserData.Data[i].scanDistance * cos(laserData.Data[i].scanAngle * DEG2RAD) /1000;
+//            point.y = laserData.Data[i].scanDistance * sin(laserData.Data[i].scanAngle * DEG2RAD) / 1000;
+//            visual_tools->publishSphere(point, rvt::colors::RED, rvt::scales::LARGE);
+//        }
+//        visual_tools->trigger();
+
 
         auto start = chrono::system_clock::now();
         if ((received_length = recvfrom(socket_FD, (char *) &laserData.Data, sizeof(LaserData) * 1000, 0, (struct sockaddr *) &socket_other, &socket_FD_length)) == -1) {

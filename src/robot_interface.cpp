@@ -62,7 +62,7 @@ void RobotInterface::t_readRobotData() {
 
     unsigned char buff[50000];
     while (robotDataThreadRun) {
-        ROS_INFO("robot data received");
+//        ROS_INFO("robot data received");
 
         memset(buff, 0, 50000 * sizeof(char));
         if ((rob_recv_len = recvfrom(rob_s, (char *) &buff, sizeof(char) * 50000, 0, (struct sockaddr *) &rob_si_other, &rob_slen)) == -1) {
