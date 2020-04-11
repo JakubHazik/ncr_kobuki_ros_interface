@@ -6,13 +6,15 @@
 #include <tf/LinearMath/Quaternion.h>
 #include <algorithm>
 #include <tf/transform_datatypes.h>
+#include <limits>
 
 NcrKobukiRosInterface::NcrKobukiRosInterface() {
-    ros::NodeHandle nh("~");
+    ros::NodeHandle nh("/");
     laserScanPub = nh.advertise<sensor_msgs::LaserScan>("scan", 1, true);
     odomDataPub = nh.advertise<geometry_msgs::Pose>("odom", 1, true);
 
-    nh.getParam("tf_prefix", tfPrefix);
+    ros::NodeHandle nhParam("~");
+    nhParam.getParam("tf_prefix", tfPrefix);
 
     std::string IpAddress = "127.0.0.1";
     LidarInterface lidar(IpAddress);
@@ -33,7 +35,7 @@ NcrKobukiRosInterface::NcrKobukiRosInterface() {
     }
 }
 
-LaserData getClosestDataAngle(LaserMeasurement &measurement, double val) {
+LaserData getClosestDataAngle(LaserMeasurement &measurement, float val) {
     int low = 0;
     int high = measurement.numberOfScans - 1;
 
@@ -44,8 +46,8 @@ LaserData getClosestDataAngle(LaserMeasurement &measurement, double val) {
     while (low < high) {
         int mid = (low + high) / 2;
         assert(mid < high);
-        double d1 = std::abs(measurement.Data[mid  ].scanAngle - val);
-        double d2 = std::abs(measurement.Data[mid + 1].scanAngle - val);
+        float d1 = std::abs(measurement.Data[mid  ].scanAngle - val);
+        float d2 = std::abs(measurement.Data[mid + 1].scanAngle - val);
         if (d2 <= d1) {
             low = mid+1;
         } else {
@@ -59,7 +61,7 @@ LaserData getClosestDataAngle(LaserMeasurement &measurement, double val) {
 
 sensor_msgs::LaserScan NcrKobukiRosInterface::laserMeasurement2Msg(LaserMeasurement &measurement) {
     sensor_msgs::LaserScan scanMsg;
-    scanMsg.header.frame_id = "/base_scan";
+    scanMsg.header.frame_id = tf::resolve(tfPrefix, "base_scan");
     scanMsg.header.stamp = ros::Time::now();
     scanMsg.angle_min = 0;
     scanMsg.angle_max = M_2_PI;
@@ -67,21 +69,29 @@ sensor_msgs::LaserScan NcrKobukiRosInterface::laserMeasurement2Msg(LaserMeasurem
     scanMsg.range_max = 5;
     scanMsg.angle_increment = 2 * M_PI / measurement.numberOfScans;
 
-    std::sort(measurement.Data, measurement.Data + measurement.numberOfScans -1, [](LaserData a, LaserData b) {
+    std::sort(measurement.Data, measurement.Data + measurement.numberOfScans, [](LaserData a, LaserData b) {
         return a.scanAngle < b.scanAngle;
     });
 
-    double angle;
+    float angle;
     for (int i = 0; i < measurement.numberOfScans; i++) {
         angle = i * scanMsg.angle_increment * RAD2DEG;
         auto laserData = getClosestDataAngle(measurement, angle);
         if (std::abs(angle - laserData.scanAngle) > 2) {
-            scanMsg.ranges.push_back(0);
+//            printf("error %f angle %f\n", std::abs(angle - laserData.scanAngle), angle);
+            scanMsg.ranges.push_back(std::numeric_limits<float>::infinity());
+            scanMsg.intensities.push_back(0);
             continue;
         }
 
         float distance = laserData.scanDistance / 1000;
-        scanMsg.ranges.push_back(distance);
+        if (isValueInRange(scanMsg.range_min, scanMsg.range_max, distance)) {
+            scanMsg.ranges.push_back(distance);
+            scanMsg.intensities.push_back(laserData.scanQuality);
+        } else {
+            scanMsg.ranges.push_back(std::numeric_limits<float>::infinity());
+            scanMsg.intensities.push_back(0);
+        }
     }
 
     return scanMsg;
