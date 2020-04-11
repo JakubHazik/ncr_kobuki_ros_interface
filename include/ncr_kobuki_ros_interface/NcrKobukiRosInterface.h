@@ -6,6 +6,8 @@
 #define SRC_NCRKOBUKIROSINTERFACE_H
 
 #include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/tf.h>
 
 #include <ncr_kobuki_ros_interface/lidar_interface.h>
 #include <ncr_kobuki_ros_interface/robot_interface.h>
@@ -21,11 +23,15 @@ public:
 private:
     ros::Publisher laserScanPub;
     ros::Publisher odomDataPub;
+    std::string tfPrefix;
 
+    tf::TransformBroadcaster odomTfBroadcaster;
 
     sensor_msgs::LaserScan laserMeasurement2Msg(LaserMeasurement& measurement);
 
     geometry_msgs::Pose odomData2Msg(const RobotPose& robotPose);
+
+    void sendOdomData(const geometry_msgs::Pose& odomPose);
 
     template <typename T>
     bool isValueInRange(T min, T max, T val);

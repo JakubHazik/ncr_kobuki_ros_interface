@@ -5,11 +5,14 @@
 #include <ncr_kobuki_ros_interface/NcrKobukiRosInterface.h>
 #include <tf/LinearMath/Quaternion.h>
 #include <algorithm>
+#include <tf/transform_datatypes.h>
 
 NcrKobukiRosInterface::NcrKobukiRosInterface() {
     ros::NodeHandle nh("~");
     laserScanPub = nh.advertise<sensor_msgs::LaserScan>("scan", 1, true);
     odomDataPub = nh.advertise<geometry_msgs::Pose>("odom", 1, true);
+
+    nh.getParam("tf_prefix", tfPrefix);
 
     std::string IpAddress = "127.0.0.1";
     LidarInterface lidar(IpAddress);
@@ -23,7 +26,8 @@ NcrKobukiRosInterface::NcrKobukiRosInterface() {
         }
 
         auto robotOdomData = robot.getOdomData();
-        odomDataPub.publish(odomData2Msg(robotOdomData));
+        auto odomPose = odomData2Msg(robotOdomData);
+        sendOdomData(odomPose);
 
         r.sleep();
     }
@@ -101,4 +105,19 @@ geometry_msgs::Pose NcrKobukiRosInterface::odomData2Msg(const RobotPose &robotPo
 template<typename T>
 bool NcrKobukiRosInterface::isValueInRange(T min, T max, T val) {
     return min < val && val < max;
+}
+
+void NcrKobukiRosInterface::sendOdomData(const geometry_msgs::Pose &odomPose) {
+    // topic
+    odomDataPub.publish(odomPose);
+
+    // tf
+    tf::Transform transform;
+    tf::Pose tfPose;
+    tf::poseMsgToTF(odomPose, tfPose);
+    transform.setOrigin(tfPose.getOrigin());
+    transform.setRotation(tfPose.getRotation());
+    odomTfBroadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(),
+            tf::resolve(tfPrefix, "odom"),
+            tf::resolve(tfPrefix, "base_footprint")));
 }
