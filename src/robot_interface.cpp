@@ -27,9 +27,7 @@ RobotInterface::RobotInterface(std::string ipAddress) {
 
 RobotInterface::~RobotInterface() {
     robotDataThreadRun = false;
-    poseControllerThreadRun = false;
     robotDataRecv.join();
-    poseController.join();
 }
 
 
@@ -80,10 +78,6 @@ void RobotInterface::t_readRobotData() {
 RobotPose RobotInterface::getOdomData() {
     lock_guard<mutex> lockGuard(odom_mtx);
     return odom;
-}
-
-double RobotInterface::getAbsoluteDistance(RobotPose posA, RobotPose posB) {
-    return sqrt(pow(posA.x - posB.x, 2) + pow(posA.y - posB.y, 2));
 }
 
 void RobotInterface::resetOdom(double x, double y, double fi) {
@@ -189,12 +183,7 @@ std::vector<unsigned char> RobotInterface::setRotationSpeed(double radpersec) {
 
 //radius <short> -32000 32000 mm
 std::vector<unsigned char> RobotInterface::setArcSpeed(int mmpersec, int radius) {
-    if (radius == 0) {
-//        double result = mmpersec * 2 * M_PI / 1200;
-//        syslog(LOG_INFO, "rotation speed:  %f", result);
-//        return setRotationSpeed(result);
-        radius = 1; // nastavime co najmensi radius 1 mm
-    }
+
 
     //viac o prikaze a jeho tvorbe si mozete precitat napriklad tu
     //http://yujinrobot.github.io/kobuki/enAppendixProtocolSpecification.html
@@ -257,8 +246,18 @@ void RobotInterface::sendArcSpeed(int mmPerSec, int mmRadius) {
     /*
      * zaporny radius znamena ze bod otacania je napravo od robota
      */
+
+
     if (mmRadius == 0) {
+//        double result = mmpersec * 2 * M_PI / 1200;
+//        syslog(LOG_INFO, "rotation speed:  %f", result);
+//        return setRotationSpeed(result);
+        mmRadius = 1; // nastavime co najmensi radius 1 mm
         syslog(LOG_ERR, "[Robot Interface]: Radius have so low value: 0");
+    }
+
+    if (mmRadius < -32000 || mmRadius > 32000 ) {
+        mmRadius = 32000;
     }
 
     std::vector<unsigned char> mess = setArcSpeed(mmPerSec, mmRadius);

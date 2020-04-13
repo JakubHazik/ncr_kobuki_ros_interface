@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/tf.h>
+#include <memory>
 
 #include <ncr_kobuki_ros_interface/lidar_interface.h>
 #include <ncr_kobuki_ros_interface/robot_interface.h>
@@ -23,7 +24,11 @@ public:
 private:
     ros::Publisher laserScanPub;
     ros::Publisher odomDataPub;
+    ros::Subscriber cmdVelSub;
     std::string tfPrefix;
+
+    std::shared_ptr<RobotInterface> robotInterface;
+    std::shared_ptr<LidarInterface> lidarInterface;
 
     tf::TransformBroadcaster odomTfBroadcaster;
 
@@ -32,6 +37,8 @@ private:
     geometry_msgs::Pose odomData2Msg(const RobotPose& robotPose);
 
     void sendOdomData(const geometry_msgs::Pose& odomPose);
+
+    void cmdVelCb(const geometry_msgs::TwistConstPtr& msg);
 
     template <typename T>
     bool isValueInRange(T min, T max, T val);

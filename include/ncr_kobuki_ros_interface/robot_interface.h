@@ -42,7 +42,16 @@ public:
 
     RobotPose getOdomData();
 
-    double getAbsoluteDistance(RobotPose posA, RobotPose posB);
+
+    /*
+     * Communication interface
+     */
+
+    void sendTranslationSpeed(int mmPerSec);
+
+    void sendRotationSpeed(int radPerSec);
+
+    void sendArcSpeed(int mmPerSec, int mmRadius);
 
 private:
     /*
@@ -54,9 +63,6 @@ private:
     std::thread robotDataRecv;
     std::atomic_bool robotDataThreadRun = {true};
 
-    std::thread poseController;
-    std::atomic_bool poseControllerThreadRun = {true};
-
     TKobukiData robotData;
 
     RobotPose odom;
@@ -67,13 +73,6 @@ private:
     int rob_s, rob_recv_len;
     unsigned int rob_slen;
 
-    RobotPose goalPose = {0,0,0};
-    std::mutex goalPose_mtx;
-    std::promise<void> goalAchieved;
-
-    std::mutex zone_mtx;
-    int goalZone = 0;
-
     /*
      * ========================================
      * Funkcie
@@ -81,16 +80,6 @@ private:
     void t_readRobotData();
 
     void computeOdometry(unsigned short encoderRight, unsigned short encoderLeft, signed short gyroAngle);
-
-    /*
-     * Communication interface
-     */
-
-    void sendTranslationSpeed(int mmPerSec);
-
-    void sendRotationSpeed(int radPerSec);
-
-    void sendArcSpeed(int mmPerSec, int mmRadius);
 
     bool sendDataToRobot(const std::vector<unsigned char> &mess);
 

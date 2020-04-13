@@ -9,25 +9,28 @@
 #include <limits>
 
 NcrKobukiRosInterface::NcrKobukiRosInterface() {
+    std::string IpAddress = "127.0.0.1";
+    lidarInterface = std::make_shared<LidarInterface>(IpAddress);
+    robotInterface = std::make_shared<RobotInterface>(IpAddress);
+
     ros::NodeHandle nh("/");
     laserScanPub = nh.advertise<sensor_msgs::LaserScan>("scan", 1, true);
     odomDataPub = nh.advertise<geometry_msgs::Pose>("odom", 1, true);
+    cmdVelSub = nh.subscribe("mobile_base/commands/velocity", 5, &NcrKobukiRosInterface::cmdVelCb, this);
 
     ros::NodeHandle nhParam("~");
     nhParam.getParam("tf_prefix", tfPrefix);
 
-    std::string IpAddress = "127.0.0.1";
-    LidarInterface lidar(IpAddress);
-    RobotInterface robot(IpAddress);
-
     ros::Rate r(10);
     while (ros::ok()) {
-        LaserMeasurement measurement = lidar.getLaserData();
+        ros::spinOnce();
+
+        LaserMeasurement measurement = lidarInterface->getLaserData();
         if (measurement.numberOfScans > 0) {
             laserScanPub.publish(laserMeasurement2Msg(measurement));
         }
 
-        auto robotOdomData = robot.getOdomData();
+        auto robotOdomData = robotInterface->getOdomData();
         auto odomPose = odomData2Msg(robotOdomData);
         sendOdomData(odomPose);
 
@@ -130,4 +133,23 @@ void NcrKobukiRosInterface::sendOdomData(const geometry_msgs::Pose &odomPose) {
     odomTfBroadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(),
             tf::resolve(tfPrefix, "odom"),
             tf::resolve(tfPrefix, "base_footprint")));
+}
+
+int speedRadiusCorrection(int requiredSpeed, int radius) {
+
+    float result = round(requiredSpeed + requiredSpeed * 0.05 - requiredSpeed/((fabs(radius) + 500.0)/500.0));
+
+    if (result == 0) {
+        result = 1;
+    }
+
+    // todo znamienka + saturacia
+    return int(result);
+}
+
+void NcrKobukiRosInterface::cmdVelCb(const geometry_msgs::TwistConstPtr& msg) {
+
+    int radius = static_cast<int>(msg->linear.x * 1000 / msg->angular.z / 2.0);
+    int speed = static_cast<int>(msg->linear.x * 1000) * 2;
+    robotInterface->sendArcSpeed(speed, radius);
 }
